@@ -82,43 +82,41 @@ class ProblemsOfTheDayStreak(commands.Cog):
             json.dump(self.streak_data, f, indent=4)
 
     # --- COMMAND: /process-problems-odd-streak ---
-    @app_commands.command(name="process-problems-odd-streak", description="Scan messages from the target and previous day to validate streaks.")
-    @app_commands.describe(target_date="The main date in YYYY-MM-DD format")
+    @app_commands.command(name="process-problems-odd-streak", description="Process today and yesterday's grace period. Resets inactive users to 0.")
+    @app_commands.describe(target_date="The main processing date (YYYY-MM-DD)")
     @app_commands.checks.has_permissions(administrator=True)
     async def process_problems_odd_streak(self, interaction: discord.Interaction, target_date: str):
         await interaction.response.defer(ephemeral=True)
         
         try:
-            # Reference date ("Today")
+            # Reference date
             current_dt = datetime.strptime(target_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            # Reference date ("Yesterday")
+            # Grace period date (yesterday)
             previous_dt = current_dt - timedelta(days=1)
             
-            # Scanning interval: Start of yesterday 00:00 -> End of today 23:59 (UTC)
+            # Scan interval: Start of yesterday 00:00 -> End of today 23:59 (UTC)
             start_scan = datetime.combine(previous_dt.date(), datetime.min.time(), tzinfo=timezone.utc)
             end_scan = datetime.combine(current_dt.date(), datetime.max.time(), tzinfo=timezone.utc)
+            
+            target_date_str = str(current_dt.date())
+            day_before_grace = (previous_dt - timedelta(days=1)).date()
         except ValueError:
             await interaction.followup.send("❌ Invalid format. Please use YYYY-MM-DD (e.g., 2026-03-22).")
             return
 
+        active_users_in_scan = set()
         new_points = 0
-        # Prevents double counting the same user for the same calendar day
-        processed_entries = set()
 
-        # oldest_first=True is CRITICAL to process "yesterday" before "today"
+        # 1. SCAN MESSAGES (48h Window)
         async for msg in interaction.channel.history(after=start_scan, before=end_scan, oldest_first=True):
             u_id = str(msg.author.id)
-            
             if u_id in STAFF_USERS:
                 continue
 
             content = msg.content.lower()
             if "https://codeforces" in content and "submission" in content:
-                msg_date = msg.created_at.date()
-                entry_key = f"{u_id}:{msg_date}"
-
-                # If the user posted multiple links on the same day, only count once
-                if entry_key in processed_entries:
+                # If already processed this user in this scan, skip
+                if u_id in active_users_in_scan:
                     continue
                 
                 if u_id not in self.streak_data:
@@ -126,35 +124,52 @@ class ProblemsOfTheDayStreak(commands.Cog):
 
                 user = self.streak_data[u_id]
                 last_str = user.get("last_date")
-                last_date = datetime.strptime(last_str, "%Y-%m-%d").date() if last_str else None
+                
+                # If they already have a record for this exact target date from a previous run, skip
+                if last_str == target_date_str:
+                    active_users_in_scan.add(u_id)
+                    continue
 
-                # Only process if this message is newer than the last recorded date in DB
-                if last_date is None or msg_date > last_date:
-                    # If it's exactly the day after the last recorded solve, increment streak
-                    if last_date and msg_date == last_date + timedelta(days=1):
-                        user["streak"] += 1
-                    else:
-                        # If a day was skipped or it's their first time, reset streak to 1
-                        user["streak"] = 1
+                last_solve_date = datetime.strptime(last_str, "%Y-%m-%d").date() if last_str else None
 
-                    user["total_solved"] = user.get("total_solved", 0) + 1
-                    
-                    if user["streak"] > user.get("highest_streak", 0):
-                        user["highest_streak"] = user["streak"]
+                # STREAK LOGIC:
+                # Since yesterday is grace, we increment if last solve was day before yesterday or yesterday
+                if last_solve_date and last_solve_date >= day_before_grace:
+                    user["streak"] += 1
+                else:
+                    user["streak"] = 1
 
-                    user["last_date"] = str(msg_date)
-                    processed_entries.add(entry_key)
-                    new_points += 1
-                    
-                    try:
-                        await msg.add_reaction("🔥")
-                    except:
-                        pass
+                user["total_solved"] = user.get("total_solved", 0) + 1
+                if user["streak"] > user.get("highest_streak", 0):
+                    user["highest_streak"] = user["streak"]
+
+                # We "move" their solve date to the target_date
+                user["last_date"] = target_date_str
+                active_users_in_scan.add(u_id)
+                new_points += 1
+                
+                try:
+                    await msg.add_reaction("🔥")
+                except:
+                    pass
+
+        # 2. RESET LOGIC (Zero out users who missed the 48h window)
+        reset_count = 0
+        for u_id, data in self.streak_data.items():
+            if u_id in STAFF_USERS:
+                continue
+            
+            # If the user was NOT active in the window we just scanned
+            if u_id not in active_users_in_scan:
+                if data.get("streak", 0) > 0:
+                    data["streak"] = 0
+                    reset_count += 1
 
         self.save_data()
         await interaction.followup.send(
-            f"✅ Scan complete for interval `{previous_dt.date()}` -> `{current_dt.date()}`.\n"
-            f"📈 `{new_points}` new streak points were processed chronologically."
+            f"✅ **Processing complete for `{target_date_str}`**\n"
+            f"└ 🔸 Active users (including grace): `{len(active_users_in_scan)}` (`{new_points}` newly updated)\n"
+            f"└ 💀 Inactive users reset to 0: `{reset_count}`"
         )
 
     # --- COMMAND: /leaderboard-problems-of-the-day ---
