@@ -6,8 +6,60 @@ import os
 import io
 from datetime import datetime, timedelta, timezone
 
-# List of user IDs that should NEVER be added to streaks
-EXCLUDED_USERS = ["781092774765396000"]
+# List of users who post the daily problems (excluded from streaks)
+STAFF_USERS = ["781092774765396000"]
+
+# --- NEW: Pagination UI Class ---
+class LeaderboardPagination(discord.ui.View):
+    def __init__(self, sorted_users):
+        super().__init__(timeout=180) # The buttons will stop working after 3 minutes to save memory
+        self.sorted_users = sorted_users
+        self.current_page = 1
+        self.per_page = 20
+        self.total_pages = max(1, (len(self.sorted_users) + self.per_page - 1) // self.per_page)
+        
+        self.update_buttons()
+
+    def update_buttons(self):
+        """Enables or disables buttons depending on the current page."""
+        self.prev_button.disabled = self.current_page == 1
+        self.next_button.disabled = self.current_page == self.total_pages
+
+    def generate_embed(self):
+        """Generates the embed for the current page."""
+        embed = discord.Embed(title="🏆 Problems of the Day - Leaderboard", color=0xFFD700)
+        
+        start_idx = (self.current_page - 1) * self.per_page
+        end_idx = start_idx + self.per_page
+        page_users = self.sorted_users[start_idx:end_idx]
+        
+        lb_description = ""
+        for i, (uid, data) in enumerate(page_users, start=start_idx + 1):
+            medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, "🔹")
+            lb_description += (
+                f"{medal} **#{i}** - <@{uid}>\n"
+                f"└ 🔥 Streak: `{data['streak']}` | ⭐ Best: `{data.get('highest_streak', 0)}` | 📈 Total: `{data.get('total_solved', 0)}`\n\n"
+            )
+
+        if not lb_description:
+            lb_description = "No users found on this page."
+            
+        embed.description = lb_description
+        embed.set_footer(text=f"Page {self.current_page} of {self.total_pages} | Utility Codesquare - BOT")
+        return embed
+
+    @discord.ui.button(label="◀️ Previous", style=discord.ButtonStyle.primary, custom_id="prev")
+    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.current_page -= 1
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.generate_embed(), view=self)
+
+    @discord.ui.button(label="Next ▶️", style=discord.ButtonStyle.primary, custom_id="next")
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.current_page += 1
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.generate_embed(), view=self)
+
 
 class ProblemsOfTheDayStreak(commands.Cog):
     def __init__(self, bot):
@@ -31,14 +83,13 @@ class ProblemsOfTheDayStreak(commands.Cog):
             json.dump(self.streak_data, f, indent=4)
 
     # --- COMMAND: /process-problems-odd-streak ---
-    @app_commands.command(name="process-problems-odd-streak", description="Scan all messages for CF submissions on a specific date.")
+    @app_commands.command(name="process-problems-odd-streak", description="Scan all messages for CF submissions on a specific UTC date.")
     @app_commands.describe(target_date="The date to process (YYYY-MM-DD)")
     @app_commands.checks.has_permissions(administrator=True)
     async def process_problems_odd_streak(self, interaction: discord.Interaction, target_date: str):
         await interaction.response.defer(ephemeral=True)
         
         try:
-            # Calculate the 24-hour interval for the respective date
             target_dt = datetime.strptime(target_date, "%Y-%m-%d")
             credit_date = target_dt.date()
             yesterday = credit_date - timedelta(days=1)
@@ -52,11 +103,10 @@ class ProblemsOfTheDayStreak(commands.Cog):
         users_processed_this_scan = set()
         new_points = 0
 
-        # Scan ONLY the messages within the 24-hour interval of the target date
-        async for msg in interaction.channel.history(after=start_of_day, before=end_of_day, limit=None):
+        async for msg in interaction.channel.history(after=start_of_day, before=end_of_day, oldest_first=True):
             u_id = str(msg.author.id)
             
-            if u_id in EXCLUDED_USERS:
+            if u_id in STAFF_USERS:
                 continue
 
             content = msg.content.lower()
@@ -75,7 +125,6 @@ class ProblemsOfTheDayStreak(commands.Cog):
                     users_processed_this_scan.add(u_id)
                     continue
 
-                # Update Stats
                 user["total_solved"] = user.get("total_solved", 0) + 1
                 user["streak"] = user["streak"] + 1 if last_date == yesterday else 1
 
@@ -92,7 +141,7 @@ class ProblemsOfTheDayStreak(commands.Cog):
                     pass
 
         self.save_data()
-        await interaction.followup.send(f"✅ Date {target_date} processed. {new_points} solvers credited.")
+        await interaction.followup.send(f"✅ Date `{target_date}` processed. `{new_points}` solvers credited for this UTC day.")
 
     # --- COMMAND: /leaderboard-problems-of-the-day ---
     @app_commands.command(name="leaderboard-problems-of-the-day", description="Rank users by current streak and total solved.")
@@ -101,26 +150,26 @@ class ProblemsOfTheDayStreak(commands.Cog):
             await interaction.response.send_message("The leaderboard is empty. 🚀")
             return
 
-        filtered_data = {uid: data for uid, data in self.streak_data.items() if uid not in EXCLUDED_USERS}
+        # Exclude STAFF_USERS
+        filtered_data = {uid: data for uid, data in self.streak_data.items() if uid not in STAFF_USERS}
         
+        # We removed the [:10] limit so ALL users are loaded into the list
         sorted_users = sorted(
             filtered_data.items(), 
             key=lambda x: (x[1].get('streak', 0), x[1].get('total_solved', 0)), 
             reverse=True
-        )[:10]
+        )
 
-        embed = discord.Embed(title="🏆 Problems of the Day - Leaderboard", color=0xFFD700)
-        lb_description = ""
-        for i, (uid, data) in enumerate(sorted_users, 1):
-            medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, "🔹")
-            lb_description += (
-                f"{medal} **#{i}** - <@{uid}>\n"
-                f"└ 🔥 Streak: `{data['streak']}` | ⭐ Best: `{data.get('highest_streak', 0)}` | 📈 Total: `{data.get('total_solved', 0)}`\n\n"
-            )
+        if not sorted_users:
+            await interaction.response.send_message("The leaderboard is empty (no valid users found). 🚀")
+            return
 
-        embed.description = lb_description
-        embed.set_footer(text="Utility Codesquare - BOT | Stay Consistent!")
-        await interaction.response.send_message(embed=embed)
+        # Create the paginated view and generate the first page
+        view = LeaderboardPagination(sorted_users)
+        embed = view.generate_embed()
+        
+        # Send the message with the embed AND the interactive buttons attached
+        await interaction.response.send_message(embed=embed, view=view)
 
 async def setup(bot):
     await bot.add_cog(ProblemsOfTheDayStreak(bot))
