@@ -9,24 +9,21 @@ from datetime import datetime, timedelta, timezone
 # List of users who post the daily problems (excluded from streaks)
 STAFF_USERS = ["781092774765396000"]
 
-# --- NEW: Pagination UI Class ---
+# --- Pagination UI Class ---
 class LeaderboardPagination(discord.ui.View):
     def __init__(self, sorted_users):
-        super().__init__(timeout=180) # The buttons will stop working after 3 minutes to save memory
+        super().__init__(timeout=180)
         self.sorted_users = sorted_users
         self.current_page = 1
         self.per_page = 20
         self.total_pages = max(1, (len(self.sorted_users) + self.per_page - 1) // self.per_page)
-        
         self.update_buttons()
 
     def update_buttons(self):
-        """Enables or disables buttons depending on the current page."""
         self.prev_button.disabled = self.current_page == 1
         self.next_button.disabled = self.current_page == self.total_pages
 
     def generate_embed(self):
-        """Generates the embed for the current page."""
         embed = discord.Embed(title="🏆 Problems of the Day - Leaderboard", color=0xFFD700)
         
         start_idx = (self.current_page - 1) * self.per_page
@@ -48,13 +45,13 @@ class LeaderboardPagination(discord.ui.View):
         embed.set_footer(text=f"Page {self.current_page} of {self.total_pages} | Utility Codesquare - BOT")
         return embed
 
-    @discord.ui.button(label="◀️ Previous", style=discord.ButtonStyle.primary, custom_id="prev")
+    @discord.ui.button(label="◀️ Previous", style=discord.ButtonStyle.primary)
     async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.current_page -= 1
         self.update_buttons()
         await interaction.response.edit_message(embed=self.generate_embed(), view=self)
 
-    @discord.ui.button(label="Next ▶️", style=discord.ButtonStyle.primary, custom_id="next")
+    @discord.ui.button(label="Next ▶️", style=discord.ButtonStyle.primary)
     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.current_page += 1
         self.update_buttons()
@@ -68,7 +65,6 @@ class ProblemsOfTheDayStreak(commands.Cog):
         self.streak_data = self.load_data()
 
     def load_data(self):
-        """Safely loads the JSON database, handling empty or corrupted files."""
         if os.path.exists(self.data_file):
             try:
                 with open(self.data_file, 'r') as f:
@@ -78,32 +74,35 @@ class ProblemsOfTheDayStreak(commands.Cog):
         return {}
 
     def save_data(self):
-        """Saves current state to problemsOfTheDayStreak.json."""
         with open(self.data_file, 'w') as f:
             json.dump(self.streak_data, f, indent=4)
 
-    # --- COMMAND: /process-problems-odd-streak ---
-    @app_commands.command(name="process-problems-odd-streak", description="Scan all messages for CF submissions on a specific UTC date.")
-    @app_commands.describe(target_date="The date to process (YYYY-MM-DD)")
+    # --- MODIFIED COMMAND: /process-problems-odd-streak ---
+    @app_commands.command(name="process-problems-odd-streak", description="Scanează ziua curentă și cea anterioară pentru a valida streak-urile.")
+    @app_commands.describe(target_date="Data principală în format YYYY-MM-DD")
     @app_commands.checks.has_permissions(administrator=True)
     async def process_problems_odd_streak(self, interaction: discord.Interaction, target_date: str):
         await interaction.response.defer(ephemeral=True)
         
         try:
-            target_dt = datetime.strptime(target_date, "%Y-%m-%d")
-            credit_date = target_dt.date()
-            yesterday = credit_date - timedelta(days=1)
-
-            start_of_day = datetime.combine(credit_date, datetime.min.time(), tzinfo=timezone.utc)
-            end_of_day = start_of_day + timedelta(days=1)
+            # Data de referință (ziua "de azi")
+            current_dt = datetime.strptime(target_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            # Data de "ieri"
+            previous_dt = current_dt - timedelta(days=1)
+            
+            # Interval de scanare: start ieri 00:00 -> final azi 23:59 (UTC)
+            start_scan = datetime.combine(previous_dt.date(), datetime.min.time(), tzinfo=timezone.utc)
+            end_scan = datetime.combine(current_dt.date(), datetime.max.time(), tzinfo=timezone.utc)
         except ValueError:
-            await interaction.followup.send("❌ Invalid format. Please use YYYY-MM-DD (e.g., 2026-03-22).")
+            await interaction.followup.send("❌ Format invalid. Te rog folosește YYYY-MM-DD (ex: 2026-03-22).")
             return
 
-        users_processed_this_scan = set()
         new_points = 0
+        # Set pentru a preveni dubla procesare a aceluiași user în aceeași zi calendaristică
+        processed_entries = set()
 
-        async for msg in interaction.channel.history(after=start_of_day, before=end_of_day, oldest_first=True):
+        # Folosim oldest_first=True pentru a procesa ziua anterioară ÎNAINTEA celei curente
+        async for msg in interaction.channel.history(after=start_scan, before=end_scan, oldest_first=True):
             u_id = str(msg.author.id)
             
             if u_id in STAFF_USERS:
@@ -111,7 +110,11 @@ class ProblemsOfTheDayStreak(commands.Cog):
 
             content = msg.content.lower()
             if "https://codeforces" in content and "submission" in content:
-                if u_id in users_processed_this_scan:
+                msg_date = msg.created_at.date()
+                entry_key = f"{u_id}:{msg_date}"
+
+                # Dacă userul a pus mai multe link-uri în aceeași zi, îl numărăm doar o dată
+                if entry_key in processed_entries:
                     continue
                 
                 if u_id not in self.streak_data:
@@ -121,39 +124,44 @@ class ProblemsOfTheDayStreak(commands.Cog):
                 last_str = user.get("last_date")
                 last_date = datetime.strptime(last_str, "%Y-%m-%d").date() if last_str else None
 
-                if last_date == credit_date:
-                    users_processed_this_scan.add(u_id)
-                    continue
+                # Procesăm doar dacă mesajul este mai nou decât ultima înregistrare din DB
+                if last_date is None or msg_date > last_date:
+                    # Dacă e exact ziua următoare, streak-ul crește
+                    if last_date and msg_date == last_date + timedelta(days=1):
+                        user["streak"] += 1
+                    else:
+                        # Dacă a sărit o zi sau e prima dată când postează, streak-ul este 1
+                        user["streak"] = 1
 
-                user["total_solved"] = user.get("total_solved", 0) + 1
-                user["streak"] = user["streak"] + 1 if last_date == yesterday else 1
+                    user["total_solved"] = user.get("total_solved", 0) + 1
+                    
+                    if user["streak"] > user.get("highest_streak", 0):
+                        user["highest_streak"] = user["streak"]
 
-                if user["streak"] > user.get("highest_streak", 0):
-                    user["highest_streak"] = user["streak"]
-
-                user["last_date"] = str(credit_date)
-                users_processed_this_scan.add(u_id)
-                new_points += 1
-                
-                try:
-                    await msg.add_reaction("🔥")
-                except:
-                    pass
+                    user["last_date"] = str(msg_date)
+                    processed_entries.add(entry_key)
+                    new_points += 1
+                    
+                    try:
+                        await msg.add_reaction("🔥")
+                    except:
+                        pass
 
         self.save_data()
-        await interaction.followup.send(f"✅ Date `{target_date}` processed. `{new_points}` solvers credited for this UTC day.")
+        await interaction.followup.send(
+            f"✅ Scanare completă pentru intervalul `{previous_dt.date()}` -> `{current_dt.date()}`.\n"
+            f"📈 `{new_points}` puncte noi de streak au fost procesate cronologic."
+        )
 
     # --- COMMAND: /leaderboard-problems-of-the-day ---
-    @app_commands.command(name="leaderboard-problems-of-the-day", description="Rank users by current streak and total solved.")
+    @app_commands.command(name="leaderboard-problems-of-the-day", description="Clasament bazat pe streak și total solved.")
     async def leaderboard_problems_of_the_day(self, interaction: discord.Interaction):
         if not self.streak_data:
-            await interaction.response.send_message("The leaderboard is empty. 🚀")
+            await interaction.response.send_message("Clasamentul este gol momentan. 🚀")
             return
 
-        # Exclude STAFF_USERS
         filtered_data = {uid: data for uid, data in self.streak_data.items() if uid not in STAFF_USERS}
         
-        # We removed the [:10] limit so ALL users are loaded into the list
         sorted_users = sorted(
             filtered_data.items(), 
             key=lambda x: (x[1].get('streak', 0), x[1].get('total_solved', 0)), 
@@ -161,14 +169,11 @@ class ProblemsOfTheDayStreak(commands.Cog):
         )
 
         if not sorted_users:
-            await interaction.response.send_message("The leaderboard is empty (no valid users found). 🚀")
+            await interaction.response.send_message("Clasamentul este gol. 🚀")
             return
 
-        # Create the paginated view and generate the first page
         view = LeaderboardPagination(sorted_users)
         embed = view.generate_embed()
-        
-        # Send the message with the embed AND the interactive buttons attached
         await interaction.response.send_message(embed=embed, view=view)
 
 async def setup(bot):
