@@ -6,10 +6,10 @@
         "last_date": "2026-03-23"
     },
     "695712076987105361": {
-        "streak": 0,
+        "streak": 1,
         "highest_streak": 4,
-        "total_solved": 11,
-        "last_date": "2026-04-03"
+        "total_solved": 12,
+        "last_date": "2026-04-05"
     },
     "1398285839439761410": {
         "streak": 0,
@@ -30,10 +30,10 @@
         "last_date": "2026-03-19"
     },
     "1374997290783211571": {
-        "streak": 1,
+        "streak": 2,
         "highest_streak": 3,
-        "total_solved": 8,
-        "last_date": "2026-04-04"
+        "total_solved": 9,
+        "last_date": "2026-04-05"
     },
     "570436230483935242": {
         "streak": 0,
@@ -96,10 +96,10 @@
         "last_date": "2026-03-23"
     },
     "385176557209124884": {
-        "streak": 16,
-        "highest_streak": 16,
-        "total_solved": 16,
-        "last_date": "2026-04-04"
+        "streak": 17,
+        "highest_streak": 17,
+        "total_solved": 17,
+        "last_date": "2026-04-05"
     },
     "645598881110949898": {
         "streak": 0,
@@ -150,10 +150,10 @@
         "last_date": "2026-03-24"
     },
     "755014175964790785": {
-        "streak": 4,
-        "highest_streak": 4,
-        "total_solved": 6,
-        "last_date": "2026-04-04"
+        "streak": 5,
+        "highest_streak": 5,
+        "total_solved": 7,
+        "last_date": "2026-04-05"
     },
     "1259631624379695239": {
         "streak": 0,
@@ -180,7 +180,7 @@
         "last_date": "2026-03-30"
     },
     "1223509096393605120": {
-        "streak": 2,
+        "streak": 0,
         "highest_streak": 2,
         "total_solved": 2,
         "last_date": "2026-04-04"
@@ -192,9 +192,15 @@
         "last_date": "2026-04-03"
     },
     "671308530963185665": {
+        "streak": 2,
+        "highest_streak": 2,
+        "total_solved": 2,
+        "last_date": "2026-04-05"
+    },
+    "611547741960798238": {
         "streak": 1,
         "highest_streak": 1,
         "total_solved": 1,
-        "last_date": "2026-04-04"
+        "last_date": "2026-04-05"
     }
 }
