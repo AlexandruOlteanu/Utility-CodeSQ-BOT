@@ -6,10 +6,10 @@
         "last_date": "2026-03-23"
     },
     "695712076987105361": {
-        "streak": 5,
-        "highest_streak": 5,
-        "total_solved": 16,
-        "last_date": "2026-04-09"
+        "streak": 6,
+        "highest_streak": 6,
+        "total_solved": 17,
+        "last_date": "2026-04-10"
     },
     "1398285839439761410": {
         "streak": 0,
@@ -30,10 +30,10 @@
         "last_date": "2026-03-19"
     },
     "1374997290783211571": {
-        "streak": 0,
+        "streak": 1,
         "highest_streak": 5,
-        "total_solved": 12,
-        "last_date": "2026-04-08"
+        "total_solved": 13,
+        "last_date": "2026-04-10"
     },
     "570436230483935242": {
         "streak": 0,
@@ -54,10 +54,10 @@
         "last_date": "2026-03-26"
     },
     "998671736709058610": {
-        "streak": 0,
+        "streak": 1,
         "highest_streak": 2,
-        "total_solved": 5,
-        "last_date": "2026-04-01"
+        "total_solved": 6,
+        "last_date": "2026-04-10"
     },
     "377907525317558273": {
         "streak": 0,
@@ -96,10 +96,10 @@
         "last_date": "2026-03-23"
     },
     "385176557209124884": {
-        "streak": 21,
-        "highest_streak": 21,
-        "total_solved": 21,
-        "last_date": "2026-04-09"
+        "streak": 22,
+        "highest_streak": 22,
+        "total_solved": 22,
+        "last_date": "2026-04-10"
     },
     "645598881110949898": {
         "streak": 0,
@@ -150,10 +150,10 @@
         "last_date": "2026-03-24"
     },
     "755014175964790785": {
-        "streak": 9,
-        "highest_streak": 9,
-        "total_solved": 11,
-        "last_date": "2026-04-09"
+        "streak": 10,
+        "highest_streak": 10,
+        "total_solved": 12,
+        "last_date": "2026-04-10"
     },
     "1259631624379695239": {
         "streak": 0,
@@ -186,40 +186,40 @@
         "last_date": "2026-04-04"
     },
     "1465749845892534405": {
-        "streak": 1,
-        "highest_streak": 1,
-        "total_solved": 2,
-        "last_date": "2026-04-09"
+        "streak": 2,
+        "highest_streak": 2,
+        "total_solved": 3,
+        "last_date": "2026-04-10"
     },
     "671308530963185665": {
-        "streak": 1,
+        "streak": 2,
         "highest_streak": 4,
-        "total_solved": 5,
-        "last_date": "2026-04-09"
+        "total_solved": 6,
+        "last_date": "2026-04-10"
     },
     "611547741960798238": {
+        "streak": 6,
+        "highest_streak": 6,
+        "total_solved": 6,
+        "last_date": "2026-04-10"
+    },
+    "533701394126077968": {
         "streak": 5,
         "highest_streak": 5,
         "total_solved": 5,
-        "last_date": "2026-04-09"
-    },
-    "533701394126077968": {
-        "streak": 4,
-        "highest_streak": 4,
-        "total_solved": 4,
-        "last_date": "2026-04-09"
+        "last_date": "2026-04-10"
     },
     "709751079512047677": {
+        "streak": 5,
+        "highest_streak": 5,
+        "total_solved": 5,
+        "last_date": "2026-04-10"
+    },
+    "488859405815644180": {
         "streak": 4,
         "highest_streak": 4,
         "total_solved": 4,
-        "last_date": "2026-04-09"
-    },
-    "488859405815644180": {
-        "streak": 3,
-        "highest_streak": 3,
-        "total_solved": 3,
-        "last_date": "2026-04-09"
+        "last_date": "2026-04-10"
     },
     "737970540685426708": {
         "streak": 0,
@@ -232,5 +232,17 @@
         "highest_streak": 1,
         "total_solved": 1,
         "last_date": "2026-04-08"
+    },
+    "1147537980467196016": {
+        "streak": 1,
+        "highest_streak": 1,
+        "total_solved": 1,
+        "last_date": "2026-04-10"
+    },
+    "1353069890256244757": {
+        "streak": 1,
+        "highest_streak": 1,
+        "total_solved": 1,
+        "last_date": "2026-04-10"
     }
 }
