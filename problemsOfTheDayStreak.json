@@ -96,10 +96,10 @@
         "last_date": "2026-03-23"
     },
     "385176557209124884": {
-        "streak": 30,
-        "highest_streak": 30,
-        "total_solved": 30,
-        "last_date": "2026-04-18"
+        "streak": 31,
+        "highest_streak": 31,
+        "total_solved": 31,
+        "last_date": "2026-04-19"
     },
     "645598881110949898": {
         "streak": 0,
@@ -126,10 +126,10 @@
         "last_date": "2026-03-23"
     },
     "1288263724620054609": {
-        "streak": 0,
+        "streak": 1,
         "highest_streak": 5,
-        "total_solved": 9,
-        "last_date": "2026-04-02"
+        "total_solved": 10,
+        "last_date": "2026-04-19"
     },
     "995652293334663249": {
         "streak": 0,
@@ -150,10 +150,10 @@
         "last_date": "2026-03-24"
     },
     "755014175964790785": {
-        "streak": 18,
-        "highest_streak": 18,
-        "total_solved": 20,
-        "last_date": "2026-04-18"
+        "streak": 19,
+        "highest_streak": 19,
+        "total_solved": 21,
+        "last_date": "2026-04-19"
     },
     "1259631624379695239": {
         "streak": 0,
@@ -192,16 +192,16 @@
         "last_date": "2026-04-11"
     },
     "671308530963185665": {
-        "streak": 0,
+        "streak": 1,
         "highest_streak": 4,
-        "total_solved": 11,
-        "last_date": "2026-04-17"
+        "total_solved": 12,
+        "last_date": "2026-04-19"
     },
     "611547741960798238": {
-        "streak": 0,
+        "streak": 1,
         "highest_streak": 6,
-        "total_solved": 8,
-        "last_date": "2026-04-13"
+        "total_solved": 9,
+        "last_date": "2026-04-19"
     },
     "533701394126077968": {
         "streak": 0,
@@ -216,10 +216,10 @@
         "last_date": "2026-04-12"
     },
     "488859405815644180": {
-        "streak": 12,
-        "highest_streak": 12,
-        "total_solved": 12,
-        "last_date": "2026-04-18"
+        "streak": 13,
+        "highest_streak": 13,
+        "total_solved": 13,
+        "last_date": "2026-04-19"
     },
     "737970540685426708": {
         "streak": 0,
@@ -234,10 +234,10 @@
         "last_date": "2026-04-08"
     },
     "1147537980467196016": {
-        "streak": 4,
-        "highest_streak": 4,
-        "total_solved": 8,
-        "last_date": "2026-04-18"
+        "streak": 5,
+        "highest_streak": 5,
+        "total_solved": 9,
+        "last_date": "2026-04-19"
     },
     "1353069890256244757": {
         "streak": 0,
@@ -274,5 +274,11 @@
         "highest_streak": 1,
         "total_solved": 1,
         "last_date": "2026-04-17"
+    },
+    "867395035112800298": {
+        "streak": 1,
+        "highest_streak": 1,
+        "total_solved": 1,
+        "last_date": "2026-04-19"
     }
 }
